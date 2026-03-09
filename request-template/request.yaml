@@ -1,0 +1,11 @@
+# QR Code Request — copy this folder, rename it, fill in the fields below, then run: python build.py
+
+data: "https://example.com"     # URL or text to encode
+name: "my_qr"                   # output filename (no extension)
+
+fill: "#000000"                  # foreground/module color (hex)
+back: "#FFFFFF"                  # background color (hex)
+shape: "rounded"                 # square | rounded | gapped | circle
+
+logo: null                       # relative path to logo inside input/, e.g. "logo.png" — or null
+logo_size_ratio: 0.20            # 0.05–0.30, how much of the QR the logo covers

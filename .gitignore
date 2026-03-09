@@ -1,0 +1,17 @@
+# Generated outputs — never commit
+*/output/*
+!*/output/.gitkeep
+
+# Real project folders (not templates)
+kimsalabim/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
