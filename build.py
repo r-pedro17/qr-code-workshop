@@ -1,9 +1,9 @@
 """
-Workshop builder — scans every subfolder for a request.yaml and generates QR codes.
+Batch QR generator — scans subfolders for request.yaml and generates QR codes.
 
 Usage:
-  python build.py                  # process all requests
-  python build.py my-project       # process one specific request folder
+  python build.py                  # process all
+  python build.py my-project       # process one
 """
 import sys
 from pathlib import Path
@@ -19,66 +19,43 @@ ROOT = Path(__file__).parent
 TEMPLATE_DIR = ROOT / "request-template"
 
 
-def load_request(folder: Path) -> dict | None:
+def process(folder: Path):
     req_file = folder / "request.yaml"
     if not req_file.exists():
-        return None
-    with req_file.open(encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def process(folder: Path):
-    cfg = load_request(folder)
-    if cfg is None:
         return
+    cfg = yaml.safe_load(req_file.read_text(encoding="utf-8"))
 
     data = cfg.get("data", "").strip()
     if not data:
         print(f"[SKIP] {folder.name}: 'data' is empty")
         return
 
-    name        = cfg.get("name", folder.name)
-    fill        = cfg.get("fill", "#000000")
-    back        = cfg.get("back", "#FFFFFF")
-    shape       = cfg.get("shape", "square")
-    logo_rel    = cfg.get("logo")
-    logo_ratio  = float(cfg.get("logo_size_ratio", 0.20))
-
-    logo_path = None
-    if logo_rel:
-        logo_path = folder / "input" / logo_rel
-        if not logo_path.exists():
-            raise SystemExit(f"[ERROR] {folder.name}: logo not found at {logo_path}")
+    logo_rel = cfg.get("logo")
+    logo = folder / "input" / logo_rel if logo_rel else None
+    if logo and not logo.exists():
+        raise SystemExit(f"[ERROR] {folder.name}: logo not found at {logo}")
 
     outdir = folder / "output"
     outdir.mkdir(parents=True, exist_ok=True)
 
+    fill, back, name = cfg.get("fill", "#000000"), cfg.get("back", "#FFFFFF"), cfg.get("name", folder.name)
+    logo_ratio = float(cfg.get("logo_size_ratio", 0.20))
     qr = make_qr(data)
-    build_png(qr, outdir / (name + ".png"), fill, back, shape, logo_path, logo_ratio)
-    build_svg(qr, outdir / (name + ".svg"), fill, back, logo_path, logo_ratio)
 
+    build_png(qr, outdir / f"{name}.png", fill, back, cfg.get("shape", "square"), logo, logo_ratio)
+    build_svg(qr, outdir / f"{name}.svg", fill, back, logo, logo_ratio)
     print(f"[OK] {folder.name} → {outdir.relative_to(ROOT)}/")
 
 
 def main():
-    targets = sys.argv[1:]
-
-    if targets:
-        folders = [ROOT / t for t in targets]
-    else:
-        # All subfolders except the template and hidden dirs
-        folders = [
-            p for p in ROOT.iterdir()
-            if p.is_dir()
-            and not p.name.startswith(".")
-            and p != TEMPLATE_DIR
-        ]
-
+    folders = [ROOT / t for t in sys.argv[1:]] or sorted(
+        p for p in ROOT.iterdir()
+        if p.is_dir() and not p.name.startswith(".") and p != TEMPLATE_DIR
+    )
     if not folders:
         print("No request folders found.")
         return
-
-    for folder in sorted(folders):
+    for folder in folders:
         try:
             process(folder)
         except Exception as e:
